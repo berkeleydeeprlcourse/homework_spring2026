@@ -1,0 +1,8 @@
+# path globs to include in the submission zip
+# if a directory is matched, all files under it are included
+
+src/**/*.py
+exp
+pyproject.toml
+uv.lock
+README.md
