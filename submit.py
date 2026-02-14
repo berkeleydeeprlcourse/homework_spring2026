@@ -4,11 +4,42 @@
 # SPDX-License-Identifier: MIT
 
 """
-Utility script to create a submission zip file containing all relevant homework files.
-No dependencies beyond the Python standard library, and works on all platforms.
+Utility script to create a submission zip file containing all relevant homework
+files. No dependencies beyond the Python standard library, and works on all
+platforms.
+
 Compatible with Python 3.6+.
 
-Usage: submit.py <hw_directory> [--list] [--help]
+This script parses a `.submit` file in the target directory and selectively
+includes matching files in the output zip archive.
+
+.submit syntax:
+```
+# lines starting with # are comments and ignored
+# paths are relative to the .submit file
+# syntax is glob patterns (https://docs.python.org/3/library/glob.html)
+# if a pattern matches a directory, the entire directory is included recursively
+
+src/**/*.py  # all .py files in src and subdirectories
+README.md
+```
+
+--------------------------------------------------------------------------------
+
+usage: submit.py [directory] [output_path] [--list|--check] [--force]
+
+Create a submission zip file. By default, tries to archive the nearest directory
+containing a `.submit` file.
+
+positional arguments:
+  directory    The directory to archive (e.g. hw1)
+  output_path  output zip file path (default: <directory>/submit.zip)
+
+options:
+  -h, --help   show this help message and exit
+  --force, -f  overwrite without confirmation
+  --list, -l   list matching files
+  --check, -c  check for missing files
 """
 
 import argparse
@@ -87,7 +118,7 @@ class ColorFormatter(logging.Formatter):
 
 def setup_logger() -> logging.Logger:
     """
-    setup a logger using `ColorFormatter` that logs to stderr
+    Setup a logger using `ColorFormatter` that logs to stderr.
     (leaving stdout clean for pipeable output)
     """
     logger = logging.getLogger("submit")
@@ -109,7 +140,10 @@ logger = setup_logger()
 
 @contextlib.contextmanager
 def hide_cursor():
-    """hide the terminal cursor while performing an operation (useful for progress bars)"""
+    """
+    Hide the terminal cursor while performing an operation
+    (useful for progress bars).
+    """
     if not INTERACTIVE:
         yield
         return
@@ -144,8 +178,8 @@ def size_for_humans(num):
 
 def _input(prompt):
     """
-    prompt the user for input if in interactive mode, otherwise log a warning
-    and return an empty string
+    Prompt the user for input if in interactive mode, otherwise log a warning
+    and return an empty string.
     """
     if INTERACTIVE:
         STREAM.write(prompt)
@@ -178,7 +212,7 @@ def _inline_clear():
 
 def find_submit_spec(current_dir: Path):
     """
-    walk up the directory tree from the current directory to find the nearest
+    Walk up the directory tree from the current directory to find the nearest
     .submit file.
     """
     for d in [current_dir] + list(current_dir.parents):
@@ -197,18 +231,23 @@ def parse_submit_spec(hw_dir: Path):
     if not submit_spec.exists():
         logger.error(f"No .submit file found in {BOLD}{hw_dir}{RESET}.")
         sys.exit(1)
+    patterns = []
 
     with submit_spec.open() as f:
-        patterns = [
-            line.strip() for line in f if line.strip() and not line.startswith("#")
-        ]
+        for line in f:
+            line = line.strip()
+            first_hash = line.find("#")
+            if first_hash != -1:
+                line = line[:first_hash].strip()  # remove comments
+            if line:
+                patterns.append(line)
     return patterns
 
 
 def collect_files(base: Path, patterns):
     """
-    Match globs against the file system and collect the paths of all matched files.
-    If a pattern matches a directory, include the directory recursively.
+    Match globs against the file system and collect the paths of all matched
+    files. If a pattern matches a directory, include the directory recursively.
 
     :param base: the base directory to resolve patterns against
     :param patterns: list of glob patterns to match (relative to base)
@@ -298,8 +337,11 @@ def main():
     _enable_windows_ansi()
 
     parser = argparse.ArgumentParser(
-        description="Create a submission zip file.",
-        usage="uv run submit.py [directory]",
+        description=(
+            "Create a submission zip file. By default, tries to archive the "
+            "nearest directory containing a `.submit` file."
+        ),
+        usage="uv run submit.py [directory] [output_path] [--list|--check] [--force]",
     )
     parser.add_argument(
         "directory", nargs="?", help="The directory to archive (e.g. hw1)"
@@ -307,26 +349,26 @@ def main():
     parser.add_argument(
         "output_path",
         nargs="?",
-        help="(optional) output zip file path (default: <directory>/submit.zip)",
+        help="output zip file path (default: <directory>/submit.zip)",
     )
     parser.add_argument(
         "--force",
         "-f",
         action="store_true",
-        help="Overwrite existing zip file without confirmation.",
+        help="overwrite without confirmation",
     )
     action_group = parser.add_mutually_exclusive_group()
     action_group.add_argument(
         "--list",
         "-l",
         action="store_true",
-        help="List the files that would be included without creating the zip.",
+        help="list matching files",
     )
     action_group.add_argument(
         "--check",
         "-c",
         action="store_true",
-        help="Check for missing files without creating the zip.",
+        help="check for missing files",
     )
 
     args = parser.parse_args()

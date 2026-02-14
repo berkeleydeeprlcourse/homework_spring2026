@@ -29,3 +29,13 @@ However, you may still use Modal if you wish.
 * If you see an error about `swig` when installing `box2d-py`, you may need to install `swig` and `cmake` on your machine.
 If you are using a Mac and have Homebrew installed, you can run `brew install swig cmake`.
 On Modal, it should already be installed.
+
+## Submission
+
+From within the `hw2/` directory, run the following command.
+
+```bash
+uv run ../submit.py
+```
+
+This will generate a `submit.zip` archive that you can upload to Gradescope.
