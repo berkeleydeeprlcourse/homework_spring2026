@@ -61,3 +61,13 @@ Then, you can download the logs and checkpoints to your local machine using a co
 ```bash
 uv run modal volume get hw1-imitation-volume exp/<experiment_name>
 ```
+
+## Submission
+
+From within the `hw1/` directory, run the following command.
+
+```bash
+uv run ../submit.py
+```
+
+This will generate a `submit.zip` archive that you can upload to Gradescope.
