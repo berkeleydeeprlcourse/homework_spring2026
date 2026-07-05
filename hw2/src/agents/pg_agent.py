@@ -94,14 +94,17 @@ class PGAgent(nn.Module):
         Note that all entries of the output list should be the exact same because each sum is from 0 to T (and doesn't
         involve t)!
         """
-        return None
+        sum_discounted_rewards = sum(self.gamma ** t * r_t for t, r_t in enumerate(rewards))
+        discounted_return = [sum_discounted_rewards for _ in rewards]
+        return np.array(discounted_return, dtype=np.float32)
 
     def _discounted_reward_to_go(self, rewards: Sequence[float]) -> Sequence[float]:
         """
         Helper function which takes a list of rewards {r_0, r_1, ..., r_t', ... r_T} and returns a list where the entry
         in each index t is sum_{t'=t}^T gamma^(t'-t) * r_{t'}.
         """
-        return None
+        gamma_r = np.array([self.gamma ** t * r_t for t, r_t in enumerate(rewards)], dtype=np.float32)
+        return np.array([np.sum(gamma_r[t:]) for t in range(len(rewards))], dtype=np.float32)
 
     def _calculate_q_vals(self, rewards: Sequence[np.ndarray]) -> Sequence[np.ndarray]:
         """Monte Carlo estimation of the Q function."""
@@ -111,12 +114,12 @@ class PGAgent(nn.Module):
             # trajectory at each point.
             # In other words: Q(s_t, a_t) = sum_{t'=0}^T gamma^t' r_{t'}
             # TODO: use the helper function self._discounted_return to calculate the Q-values
-            q_values = None
+            q_values = self._discounted_return(rewards)
         else:
             # Case 2: in reward-to-go PG, we only use the rewards after timestep t to estimate the Q-value for (s_t, a_t).
             # In other words: Q(s_t, a_t) = sum_{t'=t}^T gamma^(t'-t) * r_{t'}
             # TODO: use the helper function self._discounted_reward_to_go to calculate the Q-values
-            q_values = None
+            q_values = self._discounted_reward_to_go(rewards)
 
         return q_values
 
